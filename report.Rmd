@@ -7,7 +7,7 @@ output:
     self_contained: yes
     toc: yes
     toc_depth: 2
-subtitle: Projekt - Statistisk Databehandling
+subtitle: Projekt - Statistisk Databehandlinga
 ---
 ```{r include=FALSE}
 library(tidyverse)
