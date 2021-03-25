@@ -1,0 +1,599 @@
+---
+title: "En studie inom spelvärlden"
+author: "Alexander Nyberg"
+date: '2020-12-16'
+output:
+  html_document:
+    self_contained: yes
+    toc: yes
+    toc_depth: 2
+subtitle: Projekt - Statistisk Databehandling
+---
+```{r include=FALSE}
+library(tidyverse)
+library(rvest)
+library(gridExtra)
+library(lubridate)
+#tinytex::install_tinytex()
+library(tinytex)
+```
+
+## Introduktion
+
+En stor del av min uppväxt har baserat sig på någon form av spel, främst emot konsolspelande. Jag har fått tagit del av många speltitlar och förbrukat ett stort antal timmar framför en skärm. “Slöseri!” har en del sagt, “Gå ut och lek istället!” har man fått höra. “Tänk vad du hade kunnat gjort med all tid!”. Länge tänkte jag nog detsamma..
+
+Men efter en tid har jag börjat tänka om. “Ni anar inte vad ni missar...” efter att ha spelat klart en titel med en “story” som gett en tårar när eftertexterna rullar in. Kort sagt har jag ändrat mitt tänkesätt och känt att tiden har varit värt det. Det är en fortsatt hobby som jag fortsatt varit intresserad av och med tiden utvecklats. Ett mer intresse mot industrin, konkurrensen, andra spelares preferenser och diverse recensioner som görs på olika titlar har uppståt. I och med det har jag valt detta ämne till projektet där syftet är att granska olika titlar och dess bakomliggande faktorer, både med skrift och visuellt. 
+
+## Data
+
+Vid en start märkte jag snabbt att data finns tillgängligt. Direkta CSV-filer fanns via hemsidor som, efter förfrågning, hade kunnat användas till detta arbete, till och med filer där jag hade kunnat fördjupa analysen och möjligtvis få klarare resultat. En stor del av projektet är dock att försöka finna egen data. Jag har därför valt att använda *Scraping*, en teknisk metod där jag manuellt erhåller den informationen som jag finner intressant. Detta sker via specifika URL-hemsidor och med hjälp av en användbar hjälpbreda, *SelectorGadget*. 
+
+*Scraping* går huvudsaklingen ut på att extrahera information från en *HTML*-hemsida där hemsidan läses in som en fil (med hjälp av paketet *rvest*) och möjliggör igenomsökning för information via attribut. En inläst hemsida kan vara en tämligen rejäl labyrint för att finna dessa specifika attribut. Det är här *SelectorGadget* kommer in i bilden, där vi kan selectera attribut direkt från hemsidan. Detta förenklar det manuella arbetet att finna information väsentligt.
+
+Den data som analysen är grundad på kommer ifrån *MetaCritic*, en ytterst populär hemsida med mängder av information för vardera specifika spel. Jag har valt att titta på det passerade året - de 1000 första spelen som blivit släppta under 2020 rangordnat från topplista. Dock används endast 855 spel, se delen *Problematik med Data* nedan. 
+
+Följande information är variabler som skapas genom skrapning:
+
+* __Topplista__
+  + Topplista över 855 spel, betygsatt av hemsidan *Metacritic*. 
+* __Titlar__
+  + Synonym till spel.
+* __Platform__
+  + Synonym för konsoll, maskineri kapabel att köra spel.
+* __Meta Score__
+  + Betygsättning från experter, magasin och journalister.
+* __User Score__
+  + Betygsättning från privatpersonen.
+* __Release Date__
+  + Lansering av respektive titel.
+* __Publishers__
+  + Utgivare av en titel. 
+* __Developers__
+  + Utvecklare av en titel. 
+
+
+Vidare förtydligas rollerna *Publishers* och *Developers* för en djupare förståelse. *Publishers*, utgivarna av titlar, aktiviserar processen att ge ut titlar som är skapta av utvecklarna, *Developers*. Oftast förblir titlar utvecklade av ett bolag för att sedan bli utgiven av ett annat. Exempelvis utvecklades *The last of Us Part II*, spelet som råkar ligga på topplistans andra plats i vår data, av spelutvecklarna Naughty Dog för att sedan lanseras av Sony. 
+Samtidigt sker det också att enskilda bolag utvecklare också arrangerar utgivningen, vilket har blivit allt mer förekommande inom branschen. Ett sådant exempel är förstaplatsen i vår data, *Persona 5 Royal*, som blivit utvecklade och utgivna av bolaget Atlas.
+
+De värden som ges i *UserScore* antas inom intervallet $[0, 10]$ och representerar betyg. De värden som ges av *MetaScore* antas inom intervallet $[0, 100]$. Skillanden är irrelevant och gör det möjligt att jämföra dessa variabler. 
+
+Den data som hämtats läggs in i csv-filen $\texttt{GamesDF.csv}$ efter samtliga operationer för att få ett så rent datamaterial som möjligt. 
+
+### Problematik med data
+
+En del av data som samlades in innehar värden med *NA*. Detta gäller UserScore, där det inte fanns privatpersoner som faktiskt betygsatt ett spel. Detta såg jag som problematiskt då en del av den insamlade datan går förlorad. Jag ansåg inte att det fanns någon estimationsmetod för att hålla vår data så oberoende (unbiased) som möjligt. En tankegång var att försöka para ihop de saknade värdena med dess motsvariga *MetaScore* värde. Men då vi faktiskt vill jämföra *MetaScore* och *UserScore* med varandra så ansåg jag inte detta vara lämpligt. 
+
+Den mest lämpliga skulle möjligtvis vara att titta om det fanns dubbletter av betyg, där ett spel finns på flera konsoller. Vi skulle därför kunna anta att ett och samma spel antagligen får väldigt lika betyg på till exempel Playstation 5 som på Xbox Series. Det finns dock situationer där vissa spel var utmärkta på ena konsollen men sämre på den andra, även fast det var samma spel, vilket också anses problematiskt. 
+
+Avslutningsvid tas dessa värden med *NA* bort innan analysen genomförs. Vi förlorar därför data som annars hade hjälpt analysen framåt.
+
+
+```{r eval=FALSE, include=FALSE}
+# KOD SKRAPNING FÖR DATA
+# Ta bort include BARA för att visa kod men inte köra
+
+library(tidyverse)
+library(rvest)
+library(gridExtra)
+
+# Då hemsidorna uppdateras för detta år så måste vi skriva klart koden som krävs.
+# Detta laddas sedan ned och förns då kan vi 
+
+
+metaCritic1 <- # Första 100 spelen
+  read_html("https://www.metacritic.com/browse/games/score/metascore/year/all/filtered?year_selected=2020&view=detailed&page=0") 
+metaCritic2 <- # Nästa 200 osv...
+  read_html("https://www.metacritic.com/browse/games/score/metascore/year/all/filtered?year_selected=2020&view=detailed&page=1")
+metaCritic3 <- read_html("https://www.metacritic.com/browse/games/score/metascore/year/all/filtered?year_selected=2020&view=detailed&page=2")
+metaCritic4 <- read_html("https://www.metacritic.com/browse/games/score/metascore/year/all/filtered?year_selected=2020&view=detailed&page=3")
+metaCritic5 <- read_html("https://www.metacritic.com/browse/games/score/metascore/year/all/filtered?year_selected=2020&view=detailed&page=4")
+metaCritic6 <- read_html("https://www.metacritic.com/browse/games/score/metascore/year/all/filtered?year_selected=2020&view=detailed&page=5")
+metaCritic7 <- read_html("https://www.metacritic.com/browse/games/score/metascore/year/all/filtered?year_selected=2020&view=detailed&page=6")
+metaCritic8 <- read_html("https://www.metacritic.com/browse/games/score/metascore/year/all/filtered?year_selected=2020&view=detailed&page=7")
+metaCritic9 <- read_html("https://www.metacritic.com/browse/games/score/metascore/year/all/filtered?year_selected=2020&view=detailed&page=8")
+metaCritic10 <- read_html("https://www.metacritic.com/browse/games/score/metascore/year/all/filtered?year_selected=2020&view=detailed&page=9")
+
+obtainingValues <- function(readUrl) {
+  # Huvudfunktionen kommer ta ut all väsentlig information från en
+  # hemsida. 
+  df_metaCritics <- data.frame(1:100)
+  
+  # Vi börjar med namn
+  titleNames <- readUrl %>%
+    html_nodes(css = "a h3") %>%
+    html_text()
+  
+  # Här tas platform ut
+  platform <- readUrl %>%
+    html_nodes(css = ".platform .data") %>%
+    html_text() %>% 
+    str_replace_all(c("  " = "", "\\n" = ""))
+  
+  # Här tas Privatpersoners betygsättning ut
+  userScore <- readUrl %>%
+    html_nodes(css = ".user") %>%
+    html_text()
+  
+######################################################
+  # Här tas Metacritics betyg ut. Då jag fick dubbletter från skrapningen
+  # av varje variabel så tar jag bort varannat värde med "duplicated".
+  # Det behövdes också en funktion då attributet i MetaScore ändras bereonde
+  # på färgen på hemsidan.
+  duplicates <- seq(1, length(1:200), 2)
+  metaScore <- readUrl %>%
+    html_nodes(css = ".large.positive") %>%
+    html_text() %>%
+    as.data.frame() %>%
+    rename("MetaScore" = ".") %>%
+    mutate(MetaScore = as.integer(MetaScore)) %>%
+    filter(MetaScore > 10)
+  metaScore <- metaScore[-duplicates, ]
+  # OM FÖRSTA METASCORE < 75
+  if (length(metaScore) == 0) { #..då har vi bytt färg
+    metaScore <- readUrl %>%
+      html_nodes(css = ".clamp-score-wrap .mixed") %>%
+      html_text() %>%
+      as.integer()
+  }
+  # OM METASCORE AVBRYTS MITT I: (pga ny färg)
+  if (length(metaScore) != 100) {
+    if (metaScore[length(metaScore)] == 75) {
+      metaScore2 <- readUrl %>%
+        html_nodes(css = ".clamp-score-wrap .mixed") %>%
+        html_text() %>%
+        as.integer()
+    }
+    if (metaScore[length(metaScore)] == 51) {
+      metaScore2 <- readUrl %>%
+        html_nodes(css = ".clamp-score-wrap .negative") %>%
+        html_text() %>%
+        as.integer()
+    }
+  metaScore <- c(metaScore, metaScore2)
+}
+  
+######################################################
+  
+  # Här tas datum för lansering ut
+  releaseDate <- readUrl %>%
+    html_nodes(css = ".clamp-details span:nth-child(2)") %>%
+    html_text()
+  releaseDate <- releaseDate[-duplicates]
+  
+  ############################################################
+  
+  # Jag hade hoppats på att få tag i utvecklare/lanserare via samma hemsida som information ovan...
+  # Men dessvärre finns bara den informationen genom ett klick på varje spel. 
+  # I och med det utför vi en funktion som ska kunna plocka ut dessa genom att gå
+  # in på varje spels hemsida och ta den infromation. 
+  
+  ############################################################
+  
+  ####### --- OPERATION BIG GUNZ INFORMATION --- #######
+  
+  obtainGameUrl <- function(readUrlData) {
+    # https://www.metacritic.com/game/nintendo-64/the-legend-of-zelda-ocarina-of-time
+    
+    # Ovan syns en url som krävs för att nå hemsidan för det specifika spelet. Vi måste bygga 
+    # ..game/*PLATFORM*/*SPEL* med hjälp av strängmanipulation för att få tillgång
+    # till hemsidan direkt via en funktion. Det enda som inte ändras är 
+    # https://www.metacritic.com/game/, så det lägger vi till sist. 
+    
+    # Vi börjar med att skriva om alla spelnamn till godkända url namn för *SPEL*
+    getUrlGameTitle <- readUrlData %>%
+      html_nodes(css = "a h3") %>%
+      html_text() %>%
+      str_replace_all(pattern = c(" " = "-", "'" = "", ":" = "", "\\." = "", "\\&-" = "", "/-" = "",
+                                  "game--" = "game-", "\\,-" = "-", "\\$!" = "!", "\\[" = "", "\\]" = "",
+                                  "\\#" = "", "\\;" = "", "\\//" = "", "\\," = "")) %>%
+      tolower()
+    
+    # UNDANTAG
+    if (getUrlGameTitle[87] == "the-dark-eye--book-of-heroes") {
+      getUrlGameTitle[87] <- "the-dark-eye-book-of-heroes"
+    }
+    
+    # Sedan gör vi liknande för url platform *PLATFORM*
+    getUrlPlatform <- readUrlData %>%
+      html_nodes(css = ".platform .data") %>%
+      html_text() %>% 
+      str_replace_all(c("  " = "", "\\n" = "")) %>%
+      str_replace_all(pattern = c(" " = "-", "'" = "", ":" = "", "\\." = "", "\\&-" = "")) %>%
+      tolower()
+    
+    # Först lägger vi till *PLATFORM* genom att köra map med "https://www.metacritic.com/game/" 
+    # sedan kör vi paste0 för att sätta ihop sista speltiteln *SPEL*
+    legitUrl <- map(getUrlPlatform, .f = ~str_c("https://www.metacritic.com/game/", .x, "/", sep = ""))
+    completeUrl <- paste0(legitUrl, getUrlGameTitle)
+    
+    return(completeUrl)
+  } # Returnerar en 100 lång lista med url's. Kan användas med "map"
+  
+  # Big Gunz refererar till de stora utvecklarna. Vi ska alltså extrahera den 
+  # informationen per spel.
+  
+  # Vi tar här ut publishers
+  df_publishers <- data.frame()
+  getPublisher <- map(obtainGameUrl(readUrl), .f = 
+                        ~read_html(.x) %>%
+                        html_nodes(css = ".publisher a:nth-child(1)") %>%
+                        html_text() %>%
+                        str_replace_all(c("  " = "", "\\n" = "")))
+  publisherNames <- paste0(df_publishers, getPublisher)
+  
+  # Vi tar här ut developers
+  df_developers <- data.frame()
+  getDeveloper <- map(obtainGameUrl(readUrl), .f = 
+                        ~read_html(.x) %>% 
+                        html_nodes(css = ".developer .data") %>%
+                        html_text() %>%
+                        str_replace_all(c("  " = "", "\\n" = "")))
+  developerNames <- paste0(df_developers, getDeveloper)
+  
+  ####### --- OPERATION BIG GUNZ INFORMATION --- #######
+  
+  ############################################################
+  
+  # Data frame sätts ihop för 100 spel per hemsida
+  df_metaCritics$Titlar <- titleNames
+  df_metaCritics$Platform <- platform
+  df_metaCritics$MetaScore <- metaScore
+  df_metaCritics$UserScore <- userScore
+  df_metaCritics$ReleaseDate <- releaseDate
+  df_metaCritics$Publishers <- publisherNames
+  df_metaCritics$Developers <- developerNames
+  
+  return(df_metaCritics)
+}
+
+# Tanken av *Big Gunz*-operationen var att lyckas extrehera data från nya hemsidor - hemsidor för varje specifikt spel.
+# Det som sker ovan är att nya URL's "byggs" ihop och länkar till hemsidan för ytterligare information för vardera titel.
+# Vi tar alltså information från 1000 hemsidor, vilket jag ansåg vara det största hindret i projektet.
+# Lyckligtsvis gick de att extrahera. Detta på grund av att hemsidans titelnamn samt platformsnamn (som krävs för vardera URL)
+# var identiskt uppbyggt. Detta kan ses ovan i den första *str_replace_all*-funktionen där jag manupilerar om titelnamn
+# för att matcha hemsidans del av URL:en. Som observerat så är det inte mycket ändringar som är gjorda, vilket underlättade arbetet väldigt mycket. 
+
+# Sparar värden
+metaPage1 <- obtainingValues(metaCritic1)
+
+metaPage2 <- obtainingValues(metaCritic2)
+
+metaPage3 <- obtainingValues(metaCritic3)
+
+metaPage4 <- obtainingValues(metaCritic4)
+
+metaPage5 <- obtainingValues(metaCritic5)
+
+metaPage6 <- obtainingValues(metaCritic6)
+
+metaPage7 <- obtainingValues(metaCritic7)
+
+metaPage8 <- obtainingValues(metaCritic8)
+
+metaPage9 <- obtainingValues(metaCritic9)
+
+metaPage10 <- obtainingValues(metaCritic10)
+
+gamesDF <- function() {
+  # Då vi jobbar med 10 url's så används dessa var för sig kommer jag kopiera in var för sig.
+  
+  # Titlar läggs till
+  allNames <- 
+    c(metaPage1$Titlar, metaPage2$Titlar, metaPage3$Titlar, metaPage4$Titlar,
+      metaPage5$Titlar, metaPage6$Titlar, metaPage7$Titlar, metaPage8$Titlar,
+      metaPage9$Titlar, metaPage10$Titlar)
+  
+  # Platform läggs till
+  allPlatforms <- 
+    c(metaPage1$Platform, metaPage2$Platform, metaPage3$Platform, metaPage4$Platform, 
+      metaPage5$Platform, metaPage6$Platform, metaPage7$Platform, metaPage8$Platform, 
+      metaPage9$Platform, metaPage10$Platform)
+  
+  # MetaScore läggs till
+  allMetacritics <- 
+    c(metaPage1$MetaScore, metaPage2$MetaScore, metaPage3$MetaScore, metaPage4$MetaScore, 
+      metaPage5$MetaScore, metaPage6$MetaScore, metaPage7$MetaScore, metaPage8$MetaScore, 
+      metaPage9$MetaScore, metaPage10$MetaScore)
+  
+  # UserScore läggs till
+  allUserscore <- 
+    c(metaPage1$UserScore, metaPage2$UserScore, metaPage3$UserScore, metaPage4$UserScore, 
+      metaPage5$UserScore, metaPage6$UserScore, metaPage7$UserScore, metaPage8$UserScore, 
+      metaPage9$UserScore, metaPage10$UserScore)
+  
+  # Lanseringsdatum läggs till
+  allReleasedate <- 
+    c(metaPage1$ReleaseDate, metaPage2$ReleaseDate, metaPage3$ReleaseDate, 
+      metaPage4$ReleaseDate, metaPage5$ReleaseDate, metaPage6$ReleaseDate, 
+      metaPage7$ReleaseDate, metaPage8$ReleaseDate, metaPage9$ReleaseDate, 
+      metaPage10$ReleaseDate)
+  
+  # Publishers läggs till
+  allPublishers <- 
+    c(metaPage1$Publishers, metaPage2$Publishers, metaPage3$Publishers, 
+      metaPage4$Publishers, metaPage5$Publishers, metaPage6$Publishers, 
+      metaPage7$Publishers, metaPage8$Publishers, metaPage9$Publishers, 
+      metaPage10$Publishers)
+  
+  # Developers läggs till
+  allDevelopers <- 
+    c(metaPage1$Developers, metaPage2$Developers, metaPage3$Developers, 
+      metaPage4$Developers, metaPage5$Developers, metaPage6$Developers, 
+      metaPage7$Developers, metaPage8$Developers, metaPage9$Developers, 
+      metaPage10$Developers)
+  
+  
+  
+  df_games <- data.frame(1:1000)
+  colnames(df_games) <- "Topplista"
+  
+  # Fyller på med namn
+  df_games$Titlar <- allNames
+  df_games$Platform <- allPlatforms
+  df_games$MetaScore <- allMetacritics
+  df_games$UserScore <- allUserscore
+  df_games$ReleaseDate <- allReleasedate
+  df_games$Publishers <- allPublishers
+  df_games$Developers <- allDevelopers
+  
+  return(df_games)
+}
+
+games_dataFrame <- gamesDF()
+
+#write_csv(games_dataFrame, "GamesDF.csv")
+``` 
+
+
+```{r message=FALSE, warning=FALSE, include = FALSE}
+# Laddar in skrapad och fixad data
+GamesDF <- read_csv("../Project-Gaming-Swedish-/Data/GamesDF.csv")
+
+# Fixar UserScore - Chr values till numeric
+GamesDF <- GamesDF %>%
+  mutate(UserScore = as.numeric(UserScore))
+
+# Fixar ReleaseDate - Chr values till time
+GamesDF <- GamesDF %>%
+  mutate(ReleaseDate = parse_date_time(ReleaseDate, order = "mdy"))
+
+# Removing NA values 
+GamesDF %>%
+  filter(!is.na(UserScore))
+```
+
+\newpage
+
+## Plot över data
+
+```{r echo=FALSE, warning=FALSE}
+# Plottar UserScore gentemot MetaScore i point plot. Highlightar olika spel
+GamesDF %>%
+  ggplot(aes(x = MetaScore, y = UserScore)) +
+    geom_point(color = "#044862") +
+    scale_y_continuous(breaks = scales::pretty_breaks(n = 10)) + 
+    ggtitle("MetaScore gentemot User Score - Point Plot")
+```
+
+Resultatet som ges vid plot av *MetaScore* gentemot *UserScore* visar att majoriteten av spelare håller med  recensenterna. Däremot syns några *outlyers*, observationer där spelare möjligtvis betygsatt annorlunda. Majoriteten av *UserScore* (582 stycken) ligger mellan betygen [6, 8.5]. Toppbetyget för *UserScore* kammas hem av *Superliminal* för platformen *Xbox One* och *Switch* med hela 9.6 i betyg. Av *MetaScore* får *Superliminal* 80 samt 75 i betyg. 
+
+Ett aningen oense resultat ser vi hos *Tom Clancy's The Division 2: Warlords of New York* med ett tämligen bedrövligt betyg på 0.5 av *UserScore* medan den antar plats 289 i topplistan. 
+
+\newpage
+
+## *UserScore* - Från spelarnas perspektiv
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Vilken konsoll med flest titlar samt enligt UserScore bäst genomsnittliga betyg.
+# Antal titlar per platform
+plot1User <- GamesDF %>%
+  group_by(Platform) %>%
+  count(Platform) %>%
+    ggplot(aes(x = n, y = Platform)) + 
+      geom_col(fill = "#467EAA") + 
+      xlab("Antal titlar")
+
+# Genomsnitt UserScore
+plot2User <- GamesDF %>%
+  group_by(Platform) %>%
+  summarise(across(UserScore, ~mean(., na.rm = TRUE))) %>%
+    ggplot(aes(x = UserScore, y = Platform)) + 
+      geom_col(fill = "#467EAA") + 
+      xlab("Genomsnittligt UserScore") +
+      geom_text(aes(x = UserScore, y = Platform, 
+                    label = round(UserScore, digits = 1), hjust = 1.2))
+
+# Plots hamnar bredvid varandra
+grid.arrange(plot1User, plot2User, ncol = 2,
+  top = "Antalet titlar för respektive platform och genomsnittligt betyg från UserScore")
+```
+
+Visualiseringen ovan visar att *Nintendo Switch* innehar flest titlar med närmare 300 stycken. Switch anses vara *Nintendo*'s flaggskeppskonsol och tidigare har företaget fokuserat på olika konsoller. Antalet titlar till Switch kan möjligtvis vara på grund att de nu har valt att fokusera enbart på konsollen *Switch*. Vi kan även se att *Switch* ligger i topp när det kommer till genomsnittligt *UserScore* och är den konsollen som privatpersoner gett bäst betyg på de utgivna spelen.
+\newline
+Värt att påpeka är att det existerar dubbletter, det vill säga titlar som släppts både på till exempel Xbox One och PC, men inte till PlayStation 4. Vice versa sker också. *PC*-platformen anger också nästintill 300 titlar.
+
+Vi kan se att Switch även ligger i topp när det kommer till genomsnittligt *UserScore*.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Knittar tabell med genomsnittligt mest populära "Publisher" för UserScore
+
+GamesDF %>%
+  group_by(Publishers) %>%
+  count(UserScore) %>%
+ # filter(n > ) %>%
+  summarise(across(UserScore, ~mean(., na.rm = TRUE)), Titlar = sum(n)) %>%
+  rename("MeanUserScore" = UserScore) %>%
+  mutate(MeanUserScore = round(MeanUserScore, digits = 1)) %>%
+  arrange(desc(MeanUserScore)) %>%
+  slice(1:10) %>%
+  knitr::kable()
+```
+
+Ovan ges resultatet där vi granskar vad privatpersoner tycker om de olika *Publishers*. Betyget är ett genomsnitt av antal titlar. Vi kan observera att Valve Software ligger i topp. Värt att observera är att de har tämligen fåtal titlar släppta i toppen och kan därför lättare nå ett högt snittbetyg. Så klart kan vice versa ske, att *Publishers* hamnar lägre då det har ett fåtal släppta titlar med lågt betyg. 
+
+\newpage
+
+## *MetaScore* - Från recensenternas perspektiv
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Vilken konsoll med flest titlar samt enligt MetaScore bäst genomsnittliga betyg.
+# Antal titlar per platform
+plot1Meta <- GamesDF %>%
+  group_by(Platform) %>%
+  count(Platform) %>%
+    ggplot(aes(x = n, y = Platform)) + 
+      geom_col(fill = "#467EAA") + 
+      xlab("Antal titlar")
+
+# Genomsnittligt MetaScore
+plot2Meta <- GamesDF %>%
+  group_by(Platform) %>%
+  summarise(MetaScore = mean(MetaScore)) %>%
+    ggplot(aes(x = MetaScore, y = Platform)) + 
+      geom_col(fill = "#467EAA") + 
+      xlab("Genomsnittligt MetaScore") +
+      geom_text(aes(x = MetaScore, y = Platform,
+                    label = round(MetaScore, digits = 1), hjust = 1.2))
+
+# Plots hamnar bredvid varandra
+grid.arrange(plot1Meta, plot2Meta, ncol = 2, 
+  top = "Antalet titlar för respektive platform och genomsnittligt betyg från MetaScore")
+```
+
+Jämfört nu med snittbetyget från recensenter så ser vi att *Xbox Series X*, *Playstation 5* samt *Stadia* toppar snittbetyget. Betraktar vi *Switch* och *PC* noteras det att antal släppta spel är med än tiodubblat från vad de som toppar snittbetyg har. Fler spel ger ett mer tillfredsställande resultat, vilket möjligtvis inte kan sägas om *Playstation 5*, *Xbox Series X* och *Stadia* som har så få titlar. 
+\newline
+Tittar vi jämfört med *UserScore* kan en påstå att recensenterna är mer optimistiska kring betygsättningen då de gör högre betyg inom alla platformar. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Knittar tabell med genomsnittligt mest populära "Publisher" för MetaScore
+
+GamesDF %>%
+  group_by(Publishers) %>%
+  count(MetaScore) %>%
+  filter(n > 1) %>%
+  summarise(MetaScore = round(mean(MetaScore), digits = 1), Titlar = sum(n)) %>%
+  rename("MeanMetaScore" = MetaScore) %>%
+  arrange(desc(MeanMetaScore)) %>%
+  slice(1:10) %>%
+  knitr::kable()
+```
+
+Observerar vi nu recensenternas nöjdhet gentemot *Publishers* kan vi se att Supergiant Games ligger i topp. Värt att notera är att antalet titlar för toppkandidater inte anses vara många. Jämför vi till exempel med Sega ser vi ett högt $\texttt{MeanMetaScore}$ med hela 21 titlar, vilket anses vara många. De har alltså fått ett väldigt högt snitt för vardera titelt som de utgivit under året.
+
+\newpage
+
+## The Battle of the Titans
+
+Vidare intresserar vi oss frågeställningen av vilken *Publisher* samt *Developer* som anses vara populärast från ett helhetsperspektiv.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Hämtar ut Pubs, User, Meta och antalet titlar. Sorterar enligt User
+
+pubUsers <- GamesDF %>%
+  select(Publishers, UserScore, MetaScore) %>%
+  group_by(Publishers) %>%
+  count(UserScore, MetaScore) %>%
+  summarise(across(c(UserScore, MetaScore), ~mean(., na.rm = TRUE)), Titlar = sum(n)) %>%
+  arrange(desc(UserScore)) %>%
+  slice(1:3)
+
+# Hämtar ut Devs, User, Meta och antalet titlar. Sorterar enligt User
+devUsers <- GamesDF %>%
+  select(Developers, UserScore, MetaScore) %>%
+  group_by(Developers) %>%
+  count(UserScore, MetaScore) %>%
+  summarise(across(c(UserScore, MetaScore), ~mean(., na.rm = TRUE)), Titlar = sum(n)) %>%
+  arrange(desc(UserScore)) %>%
+  filter(Titlar > 1) %>%
+  slice(1:3)
+
+grid.arrange(tableGrob(pubUsers), tableGrob(devUsers), ncol = 1)
+```
+
+Vi visar topplistans tre mest populära Publishers och Developers från privatpersoners perspektiv. Två olika namn hamnar på första plats medan både andra plats och tredje plats utgörs av samma bolag. *Jackbox Games, Inc.* samt *Supergiant Games* får båda högt betyg från UserScore. Den observanta kan tyda att *Supergiant Games* även har ett tämligen högt betyg hos MetaScore. Detta leder oss till analysen från recensenterna.
+
+```{r echo=FALSE, message=FALSE}
+# Identisk som kod ovan, enda skillnaden är arrange-funktionen.
+# Den arrange() istället på MetaScore
+pubMetas <- GamesDF %>%
+  select(Publishers, UserScore, MetaScore) %>%
+  group_by(Publishers) %>%
+  count(UserScore, MetaScore) %>%
+  summarise(across(c(UserScore, MetaScore), ~mean(., na.rm = TRUE)), Titlar = sum(n)) %>%
+  arrange(desc(MetaScore)) %>%
+  slice(1:3)
+
+devMetas <- GamesDF %>%
+  select(Developers, UserScore, MetaScore) %>%
+  group_by(Developers) %>%
+  count(UserScore, MetaScore) %>%
+  summarise(across(c(UserScore, MetaScore), ~mean(., na.rm = TRUE)), Titlar = sum(n)) %>%
+  arrange(desc(MetaScore)) %>%
+  filter(Titlar > 1) %>%
+  slice(1:3)
+
+grid.arrange(tableGrob(devMetas), tableGrob(pubMetas), ncol = 1)
+```
+
+Recensenternas betyg placerar *Supergiant Games* på förstaplats för både Publisher och Developer. Jämfört med *UserScore* får de ett mer optimistikt betyg från recensenterna. 
+
+Det har påpekats att antalet utgivna titlar möjligtvis spelar roll för ett tydligare genomsnitt. Detta spelar främst roll hos *Publishers* som har tillgång att ge ut titlar från både sig själva men också från flera olika *Developers*. Vi ska ta en titt på hur genomsnittet ser ut där vi har antalet titlar i fokus. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+pubTitles <- GamesDF %>%
+  select(Publishers, UserScore, MetaScore) %>%
+  group_by(Publishers) %>%
+  count(UserScore, MetaScore) %>%
+  summarise(across(c(UserScore, MetaScore), ~mean(., na.rm = TRUE)), Titlar = sum(n)) %>%
+  arrange(desc(Titlar)) %>%
+  slice(1:10) %>%
+  knitr::kable()
+pubTitles
+```
+
+Läsaren med mindre intresse av ämnet kommer förmodligen nu känna igen de *Publishers* som nämns i resultatet. Anledning är just den att mindre *Developers* släpper spel under vingarna hos större bolag. Vissa är också ägda av de större bolagen och släpper därför såklart under deras namn. 
+
+\newpage
+
+## Topplista - Hur är de mest populära spelen fördelade över Platform?
+
+```{r echo=FALSE, message=FALSE}
+top75Users <- GamesDF %>%
+  arrange(desc(UserScore)) %>%
+  slice(1:75) %>%
+  group_by(Platform) %>%
+  summarise(across(c(Titlar, UserScore))) %>%
+  ggplot(aes(x = Platform, y = Titlar)) + 
+    geom_tile(aes(fill = UserScore), color = "grey", width = .7) +
+    theme_grey(base_size = 7)
+
+top75Metas <- GamesDF %>%
+  arrange(desc(MetaScore)) %>%
+  slice(1:75) %>%
+  group_by(Platform) %>%
+  summarise(across(c(Titlar, MetaScore))) %>%
+  ggplot(aes(x = Platform, y = Titlar)) + 
+    geom_tile(aes(fill = MetaScore), color = "grey", width = .7) +
+    theme_grey(base_size = 7)
+
+top75Users
+```
+
+
+
+```{r echo=FALSE, message=FALSE}
+top75Metas
+```
+
+Ovan kan vi se fördelningen för platform av de 75 best rankade titlarna. Tittar vi på perspektivet från *UserScore* så ser vi att deras betygsättning har varit som högst hos platformen Switch. Den personen som alltså väljer Switch har sannolikt större chans att få ta del av topptitlar, förutsatt att personen följer betygen från *UserScore*.
+
+Observerar nu perspektivet från *MetaScore* ser vi en högre populäritet hos PC-platformen. 
+
+
+## Diskussion
+
+Med den data som lyckades bli tillgänglig kunde intressanta resultat åstakommas. Skrapningsprocessen gör det möjligt att vara specifik i den informationen som en individ vill få tag i, istället för att behöva se över en större datamängd än nödvändigt. Den största utmaningen blev att faktiskt få tillgång till den informationen som var sökt. Till exempel för tillgång till *Publishers* så krävdes det, per titel, en unik hemsida hämtad och skrapad. Väl med den önskade data i hand så krävdes det att ta bort *NA* värden, vilket påverkar analysen negativt. 
+
+En ska också ta det försiktigt med metoden för skrapning utifall det finns ett intresse att publicera arbetet offentligt. Det finns olika regleringar som gör det ett brott att ta del och utnyttja data som är tagen från en hemsida man själv inte äger på något sätt. 
+
+Vidare blev de olika resultaten intressanta och tydliga. De olika plots som används ger en tydlig bild av skillnader mellan olika variabler, främst fokuserat mellan *MetaScore* och *UserScore* i olika scenarion.
