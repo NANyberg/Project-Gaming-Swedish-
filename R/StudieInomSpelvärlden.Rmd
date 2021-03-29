@@ -347,7 +347,7 @@ games_dataFrame <- gamesDF()
 
 ```{r message=FALSE, warning=FALSE, include = FALSE}
 # Laddar in skrapad och fixad data
-GamesDF <- read_csv("../Project-Gaming-Swedish-/Data/GamesDF.csv")
+GamesDF <- read_csv("../Data/GamesDF.csv")
 
 # Fixar UserScore - Chr values till numeric
 GamesDF <- GamesDF %>%
@@ -387,6 +387,7 @@ Ett aningen oense resultat ser vi hos *Tom Clancy's The Division 2: Warlords of 
 # Vilken konsoll med flest titlar samt enligt UserScore bäst genomsnittliga betyg.
 # Antal titlar per platform
 plot1User <- GamesDF %>%
+  filter(!is.na(UserScore)) %>%
   group_by(Platform) %>%
   count(Platform) %>%
     ggplot(aes(x = n, y = Platform)) + 
