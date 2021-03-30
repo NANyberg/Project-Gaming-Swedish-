@@ -492,6 +492,7 @@ Vidare intresserar vi oss frågeställningen av vilken *Publisher* samt *Develop
 
 pubUsers <- GamesDF %>%
   select(Publishers, UserScore, MetaScore) %>%
+  filter(!is.na(UserScore)) %>%
   group_by(Publishers) %>%
   count(UserScore, MetaScore) %>%
   summarise(across(c(UserScore, MetaScore), ~mean(., na.rm = TRUE)), Titlar = sum(n)) %>%
