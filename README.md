@@ -1,4 +1,4 @@
-# Project-Gaming-Swedish-
+# Project Games (Swedish)
 A look into Meta/User critic scores from top 1000 games of 2020 and analyses of scores and distributions using tables and plots. 
 
 For HTML Document:
