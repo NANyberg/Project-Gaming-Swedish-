@@ -592,7 +592,7 @@ Ovan kan vi se fördelningen för platform av de 75 best rankade titlarna. Titta
 Observerar nu perspektivet från *MetaScore* ser vi en högre populäritet hos PC-platformen. 
 
 
-## Diskussion
+## Vidare diskussion
 
 Med den data som lyckades bli tillgänglig kunde intressanta resultat åstakommas. Skrapningsprocessen gör det möjligt att vara specifik i den informationen som en individ vill få tag i, istället för att behöva se över en större datamängd än nödvändigt. Den största utmaningen blev att faktiskt få tillgång till den informationen som var sökt. Till exempel för tillgång till *Publishers* så krävdes det, per titel, en unik hemsida hämtad och skrapad. Väl med den önskade data i hand så krävdes det att ta bort *NA* värden, vilket påverkar analysen negativt. 
 
