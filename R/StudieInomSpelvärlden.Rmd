@@ -596,6 +596,4 @@ Observerar nu perspektivet från *MetaScore* ser vi en högre populäritet hos P
 
 Med den data som lyckades bli tillgänglig kunde intressanta resultat åstakommas. Skrapningsprocessen gör det möjligt att vara specifik i den informationen som en individ vill få tag i, istället för att behöva se över en större datamängd än nödvändigt. Den största utmaningen blev att faktiskt få tillgång till den informationen som var sökt. Till exempel för tillgång till *Publishers* så krävdes det, per titel, en unik hemsida hämtad och skrapad. Väl med den önskade data i hand så krävdes det att ta bort *NA* värden, vilket påverkar analysen negativt. 
 
-En ska också ta det försiktigt med metoden för skrapning utifall det finns ett intresse att publicera arbetet offentligt. Det finns olika regleringar som gör det ett brott att ta del och utnyttja data som är tagen från en hemsida man själv inte äger på något sätt. 
-
 Vidare blev de olika resultaten intressanta och tydliga. De olika plots som används ger en tydlig bild av skillnader mellan olika variabler, främst fokuserat mellan *MetaScore* och *UserScore* i olika scenarion.
