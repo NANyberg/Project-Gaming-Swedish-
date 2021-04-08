@@ -345,21 +345,10 @@ games_dataFrame <- gamesDF()
 ``` 
 
 
-```{r message=FALSE, warning=FALSE, include = FALSE}
+```{r}
 # Laddar in skrapad och fixad data
 GamesDF <- read_csv("../Data/GamesDF.csv")
-
-# Fixar UserScore - Chr values till numeric
-GamesDF <- GamesDF %>%
-  mutate(UserScore = as.numeric(UserScore))
-
-# Fixar ReleaseDate - Chr values till time
-GamesDF <- GamesDF %>%
-  mutate(ReleaseDate = parse_date_time(ReleaseDate, order = "mdy"))
-
-# Removing NA values 
-GamesDF %>%
-  filter(!is.na(UserScore))
+as.data.frame(GamesDF)
 ```
 
 \newpage
